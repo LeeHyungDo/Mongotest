@@ -1,4 +1,3 @@
-
 exports.mapRoute = function(app, prefix) {
 
    prefix = '/' + prefix;

@@ -1,16 +1,10 @@
 var express = require('express')
-  , bodyParser = require('body-parser')
   , main = require('./main')
   , map = require('./maproutecontroller')
   , http = require('http')
   , stylus = require('stylus')
   , stats = require('./stats')
   , mongoose = require('mongoose')
-  , morgan = require('morgan')
-  , methodOverride = require('method-override')
-  , favicon = require('serve-favicon')
-  , errorHandler = require('errorhandler')
-  , serveIndex = require('serve-index')
   , app = express();
 
 // MongoDB
@@ -20,22 +14,22 @@ mongoose.connection.on('open', function() {
    console.log('Connected to Mongoose');
 });
 
+app.configure(function(){
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(stats());
-  app.use(favicon(__dirname + '/public/images/favicon.ico'));
-  app.use(morgan('dev'));
-//  app.use(express.staticCache({maxObjects: 100, maxLength: 512}));
+  app.use(express.favicon());
+  app.use(express.logger('dev'));
+  app.use(express.staticCache({maxObjects: 100, maxLength: 512}));
   app.use(stylus.middleware({
       src: __dirname + '/views'
     , dest: __dirname + '/public'
   }));
   app.use(express.static(__dirname + '/public'));
-  app.use(bodyParser.urlencoded({extended:false}));
-  app.use(bodyParser.json());
-  app.use(methodOverride());
-//  app.use(app.router);
-  app.use(serveIndex('/public', {'icons': true}));
+  app.use(express.bodyParser());
+  app.use(express.methodOverride());
+  app.use(app.router);
+  app.use(express.directory(__dirname + '/public'));
   app.use(function(req, res, next){
     throw new Error(req.url + ' not found');
   });
@@ -43,11 +37,11 @@ mongoose.connection.on('open', function() {
     console.log(err);
     res.send(err.message);
   });
+});
 
-var env = process.env.NODE_ENV || 'development';
-if('development' == env) {
-  app.use(errorHandler());
-}
+app.configure('development', function(){
+  app.use(express.errorHandler());
+});
 
 // top level
 app.get('/', main.index);
